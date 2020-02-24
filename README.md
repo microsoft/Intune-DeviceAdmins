@@ -1,4 +1,3 @@
-
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
@@ -114,4 +113,5 @@ The report will have graphical display of number of checks performed, passed, fa
     * Not tested - indicates these QC checks were not performed by automation.
 
 Passed scenarios will be self-explanatory and for "Failed" cases a FailureReason will be given.
+
 
