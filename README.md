@@ -68,17 +68,21 @@ This will perform all QC checks and display verbose output. Ignore any errors yo
 
 ### How to analyze QC report 
 The report will have graphical display of number of checks performed, passed, failed and not tested.
-    * Passed - indicates these QC checks were passed 
-    * Failed - indicates these QC checks were failed 
-    * Not tested/Skipped/Manual - indicates these QC checks were not performed by automation. This means:
-        * Either they're not possible to automate (e.g. "Verify access to CM12 Console locally") 
-        * They're not yet automated. 
+* Passed - indicates these QC checks were passed 
+* Failed - indicates these QC checks were failed
+* Not tested/Skipped/Manual - indicates these QC checks were not performed by automation. 
+
+This means:
+* Either they're not possible to automate (e.g. "Verify access to CM12 Console locally") 
+* They're not yet automated. 
 
 Passed scenarios will be self-explanatory and for "Failed" cases a FailureReason will be given. 
-    * For example: 
-        * '''Verify if file 'I:\Program Files\Microsoft Configuration Manager\Logs\sitestat.log' does not contain any 'Error'.'''
-        * '''Expected: {} But was:  {omGetServerRoleAvailabilityState could not read from the registry on <MACHINE_NAME>; error = 5:   $$<SMS_SITE_SYSTEM_STATUS_SUMMARIZER><07-30-2018 00:00:00.620+420><thread=40800 (0x9F60)>}'''
-    * This result indicates that the file was not supposed to contain any "Error", but an error line was found. 
+For example:
+
+	Verify if file 'I:\Program Files\Microsoft Configuration Manager\Logs\sitestat.log' does not contain any 'Error'.
+	Expected: {} But was:  {omGetServerRoleAvailabilityState could not read from the registry on <MACHINE_NAME>; error = 5:   		$$<SMS_SITE_SYSTEM_STATUS_SUMMARIZER><07-30-2018 00:00:00.620+420><thread=40800 (0x9F60)>}
+	
+This result indicates that the file was not supposed to contain any "Error", but an error line was found. 
 
 ## Client Health QC Automation
 ### Steps
@@ -86,32 +90,32 @@ Passed scenarios will be self-explanatory and for "Failed" cases a FailureReason
 
 2) Open "ClientHealthQCConfigurations.psd1" file 
 
-3) Change the following configuration values: 
+3) Change the following configuration values:
 
-    '''InputParams = @{                    
+	InputParams = @{                    
             SiteCode = "CAS" ## [NOTE] - Change this code as per site you're performing QC On 
             UpgradeDateTime = '7/12/2018 10:00:00 AM' ## Time (PST) when upgrade is scheduled (Pre-QC) or happened (Post QC)  
-        }'''
-        
-    '''ExpectedValues = @{ 
+        }
+	
+    	ExpectedValues = @{ 
             ExpectedClientVersion = "5.00.8690.1000" ## Change this as per upgrade release 
             ExpectedUpgradeName = "Configuration Manager 1806" ## Change this as per upgrade release
-        }'''
-
+        }	
+	
 4) Open PowerShell console or ISE in elevated mode and execute following script: PS > C:\QC\ClientHealth\Upgrade\Perform-ClientHealthUpgradeQC.ps1 
 
 This will perform all QC checks and display verbose output. Ignore any errors you see while the script is executing. It will take around 15 minutes, however it is recommended to wait until 30 minutes to get QC completed. 
 
-5) Once QC is complete, a report is generated under C:\QC\ClientHealth\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files: 
-    * QC results - CSV file  
-    * QC results  - Html file 
-    * QC results - png file (pie chart) 
+5) Once QC is complete, a report is generated under C:\QC\ClientHealth\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files:
+* QC results - CSV file
+* QC results  - Html file
+* QC results - png file (pie chart) 
 
 ### How to analyze QC report 
 The report will have graphical display of number of checks performed, passed, failed and not tested. 
-    * Passed - indicates these QC checks were passed
-    * Failed - indicates these QC checks were failed
-    * Not tested - indicates these QC checks were not performed by automation.
+* Passed - indicates these QC checks were passed
+* Failed - indicates these QC checks were failed
+* Not tested - indicates these QC checks were not performed by automation.
 
 Passed scenarios will be self-explanatory and for "Failed" cases a FailureReason will be given.
 
