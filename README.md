@@ -13,7 +13,6 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-<<<<<<< Updated upstream
 # QC Automation
 
 PowerShell based quality control automation used to do pre- and post- evaluation of Configuration Manager environments.
@@ -35,11 +34,12 @@ The folder will usually contain the following files:
 
 ## Infra - Upgrade QC automation
 ### Steps
-Log on to server hosting the QC automation scripts (usually Central Administration Site for Infra QC)
+1) Log on to server hosting the QC automation scripts (usually Central Administration Site for Infra QC)
 
-Open PowerShell console or ISE in elevated mode and execute following script: PS > C:\QC\Infra\Upgrade\Perform-InfraUpgradeQC.ps1
+2) Open PowerShell console or ISE in elevated mode and execute following script: PS > C:\QC\Infra\Upgrade\Perform-InfraUpgradeQC.ps1
 
 If you get the following error, ignore it: 
+
 	'''Import-Module : The RPC server is unavailable. (Exception from HRESULT: 0x800706BA)
     At I:\QC\Module\QCModule.psm1:30 char:13
     +             Import-Module "$($ENV:SMS_ADMIN_UI_PATH)\..\Configuration ... 
@@ -47,7 +47,7 @@ If you get the following error, ignore it:
     + CategoryInfo          : OpenError: (CAZ:PSDriveInfo) [Import-Module], SmsConnectionException 
     + FullyQualifiedErrorId : Drive,Microsoft.PowerShell.Commands.ImportModuleCommand'''
 
-A UI page should launch allowing you to enter various details about this particular QC test run.
+3) A UI page should launch allowing you to enter various details about this particular QC test run.
 
 Please read the instructions carefully and provide inputs accordingly. Import inputs are: 
     * QC Title  
@@ -55,16 +55,16 @@ Please read the instructions carefully and provide inputs accordingly. Import in
     * Upgrade Schedule date and time - if you mention the values in past, it will be Post QC check or else it will be Pre-QC check 
     * Site codes - select all site codes to perform QC on. The QC will be performed one-by-one. 
 
-Click on Start QC button. 
+4) Click on Start QC button. 
 
 This will perform all QC checks and display verbose output. Ignore any errors you see while the script is executing. It will take around 3 minutes, however it is recommended to wait until 10 minutes to get QC completed. 
 
-Once QC is complete, a report is generated under C:\QC\Infra\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files: 
+5) Once QC is complete, a report is generated under C:\QC\Infra\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files: 
     * QC results - CSV file  
     * QC results  - Html file 
     * QC results - png file (pie chart) 
 
-Repeat the above steps for other sites as required
+6) Repeat the above steps for other sites as required
 
 ### How to analyze QC report 
 The report will have graphical display of number of checks performed, passed, failed and not tested.
@@ -82,15 +82,15 @@ Passed scenarios will be self-explanatory and for "Failed" cases a FailureReason
 
 ## Client Health QC Automation
 ### Steps
-Log on to Client machine where you are test. Ex: Navigate to "C:\QC\Client&Health\ClientHealth\Upgrade" 
+1) Log on to Client machine where you are test. Ex: Navigate to "C:\QC\Client&Health\ClientHealth\Upgrade" 
 
-Open "ClientHealthQCConfigurations.psd1" file 
+2) Open "ClientHealthQCConfigurations.psd1" file 
 
-Change the following configuration values: 
+3) Change the following configuration values: 
+
     '''InputParams = @{                    
             SiteCode = "CAS" ## [NOTE] - Change this code as per site you're performing QC On 
             UpgradeDateTime = '7/12/2018 10:00:00 AM' ## Time (PST) when upgrade is scheduled (Pre-QC) or happened (Post QC)  
-            EmailAudience = "ecmlseall@microsoft.com" ## Audience to receive QC report 
         }'''
         
     '''ExpectedValues = @{ 
@@ -98,11 +98,11 @@ Change the following configuration values:
             ExpectedUpgradeName = "Configuration Manager 1806" ## Change this as per upgrade release
         }'''
 
-Open PowerShell console or ISE in elevated mode and execute following script: PS > C:\QC\ClientHealth\Upgrade\Perform-ClientHealthUpgradeQC.ps1 
+4) Open PowerShell console or ISE in elevated mode and execute following script: PS > C:\QC\ClientHealth\Upgrade\Perform-ClientHealthUpgradeQC.ps1 
 
 This will perform all QC checks and display verbose output. Ignore any errors you see while the script is executing. It will take around 15 minutes, however it is recommended to wait until 30 minutes to get QC completed. 
 
-Once QC is complete, a report is generated under C:\QC\ClientHealth\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files: 
+5) Once QC is complete, a report is generated under C:\QC\ClientHealth\Upgrade\Reports folder. A new folder will be created for each execution and it will contain three files: 
     * QC results - CSV file  
     * QC results  - Html file 
     * QC results - png file (pie chart) 
