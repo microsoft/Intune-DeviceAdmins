@@ -21,9 +21,11 @@ PowerShell based quality control automation used to do pre- and post- upgrade ev
 
 * [Pester](https://github.com/pester/Pester/wiki/Pester) is a Behavior-Driven Development (BDD) based test runner and mocking framework for PowerShell.
 
-QC module resides under QC root folder and contains all functions that have business logic to write Pester test cases upon. 
-	* \QCAutomation\Module\QCModule.psd1 
-	* \QCAutomation\Module\QCModule.psm1 
+QC module resides under QC root folder and contains all functions that have business logic to write Pester test cases upon.
+
+* \QCAutomation\Module\QCModule.psd1
+
+* \QCAutomation\Module\QCModule.psm1
 
 There will be a separate folder for each area (e.g.\QC\Infra\Upgrade). Under Infra, we have Upgrade section. This means the QC is written for Infra client Upgrade scenarios. The folder will usually contain the following files:
 
@@ -52,11 +54,10 @@ If you get the following error, ignore it:
 	+ FullyQualifiedErrorId : Drive,Microsoft.PowerShell.Commands.ImportModuleCommand
 
 3) A UI page should launch allowing you to enter various details about this particular QC test run.
-
-Please read the instructions carefully and provide inputs accordingly. Important inputs are:
-	* QC Title  
-	* Expected Client Version - this should be new version of CM client.  
-	* Upgrade Schedule date and time - if you mention the values in past, it will be Post QC check or else it will be Pre-QC check
+Important inputs are:
+	* QC Title
+	* Expected Client Version - this should be new version of CM client.
+	* Upgrade Schedule date and time - if you mention the values in past, it will be Post QC check or else it will be Pre-QC check 
 	* Site codes - select all site codes to perform QC on. The QC will be performed one-by-one. 
 
 4) Click on Start QC button. 
