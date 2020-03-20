@@ -7,7 +7,7 @@ AppsParams = @{
                     DistributionPointName = "PPEDP01.PPE.COM" 
                     
                     DeployCollectionName = "App/Package Deployments"
-                    UserCollectionName = "TCS- Internal"
+                    UserCollectionName = "AppsCollection01"
                     
                     ComputerName1 = "APPOSDTESTVM01"
                     ComputerName2 = "APPOSDTESTVM02"
