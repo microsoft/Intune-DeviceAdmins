@@ -1,4 +1,4 @@
-﻿Add-Type -AssemblyName presentationframework
+Add-Type -AssemblyName presentationframework
 
 function New-FieldSetting {
     param
