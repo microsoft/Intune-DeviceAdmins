@@ -1,4 +1,4 @@
-﻿#############################################################################
+#############################################################################
 # Purpose : This script is to delete all collections/Packages/Applications from a specific folder
 # Created : 2018/10/08
 # Author  : Microsoft
