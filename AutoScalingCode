@@ -1,0 +1,145 @@
+######################################################################
+
+Purpose : This script is to implement basic auto scaling of Virtual Machines within a Microsoft Azure Automation Account Runbook
+Created : 2021/4/21
+Author : Microsoft
+######################################################################
+
+#For this powershell script we had to create a Powershell workflow in order to use the foreach -parallel feature
+workflow Scale-AzureVMs-Workflow
+{
+    #Logging into Azure with a service principal in Automation Runbook
+    $ServicePrincipalConnection = Get-AutomationConnection -Name 'AzureRunAsConnection'
+    Add-AzAccount -ServicePrincipal -TenantId $ServicePrincipalConnection.TenantId -ApplicationId $ServicePrincipalConnection.ApplicationId -CertificateThumbprint $ServicePrincipalConnection.CertificateThumbprint 
+    $AzureContext = Select-AzSubscription -SubscriptionId $ServicePrincipalConnection.SubscriptionID
+
+    #Get list of VM groups from variable in Automation Account to perform auto scaling on 
+    $VMScalingGroups = (Get-AutomationVariable -Name "VMScalingGroups").Split(',')
+
+    foreach -parallel ($VMGroup in $VMScalingGroups) {
+        InlineScript {
+            #We use dictionaries for scaling up and scaling down SKU sizes. We also only use 3 sizes: F2s_v2, F4s_v2, F8s_v2
+            $noResize = "noresize"
+            $ScaleUp = @{
+                "Standard_F2s_v2"     = "Standard_F4s_v2" 
+                "Standard_F4s_v2"     = "Standard_F8s_v2"
+                "Standard_F8s_v2"     = $noResize       
+            }
+                
+            $ScaleDown = @{ 
+                "Standard_F2s_v2"     = $noResize 
+                "Standard_F4s_v2"     = "Standard_F2s_v2" 
+                "Standard_F8s_v2"     = "Standard_F4s_v2"          
+            } 
+
+            ########################################### FUNCTIONS ###########################################
+
+            #This function scales the VM group to SKU size F8s_v2
+            function Beginning-ProductionHoursScaleVMs {
+                param(
+                    $VMGroup
+                )
+
+                $VMs = Get-AzVM | where {$_.Name -like "*$($VMGroup)*" -and $_.Name -notmatch "$($VMGroupsIgnore)"}
+                foreach($VM in $VMs) {
+                    $VMSize = $VM.HardwareProfile.VmSize
+                    if ($VMSize -ne $BaseSize) {
+                        Change-VMSize -VMGroup $VMGroup -VmName $VM.Name -ResourceGroup $VM.ResourceGroupName -ChangeSize "Standard_F8s_v2" -ErrorAction Stop
+                    } 
+                }
+            }
+
+            #This function checks the CPU load for each VM in a VM group and scales up if > 90%, down if < 40%
+            function DynamicallyScaleVMs {
+                param(
+                    $VMGroup
+                )
+                
+                $VMs = Get-AzVM | where {$_.Name -like "*$($VMGroup)*" -and $_.Name -notmatch "$($VMGroupsIgnore)"}
+                foreach($VM in $VMs) {
+                    $Cpu = Get-CpuPercentage -VmName $VM.Name -ErrorAction Stop
+                    if ($Cpu -le 40) {
+                        Change-VMSize -VMGroup $VMGroup -VmName $VM.Name -ResourceGroup $VM.ResourceGroupName -ChangeSize "decrease" -ErrorAction Stop
+                    }
+                    elseIf ($Cpu -ge 90) {
+                        Change-VMSize -VMGroup $VMGroup -VmName $VM.Name -ResourceGroup $VM.ResourceGroupName -ChangeSize "increase" -ErrorAction Stop
+                    }
+                }
+            }
+
+            #This function changes the SKU size of the VM to a new size 
+            function Change-VMSize
+            {
+                param 
+                (
+                    [parameter(Mandatory)]
+                    [string]$VmName,
+                    [parameter(Mandatory)]
+                    [string]$VMGroup,
+                    [parameter(Mandatory)]
+                    [string]$ResourceGroup,
+                    [parameter(Mandatory)]
+                    [string]$ChangeSize
+                )
+
+                $Vm = Get-AzVM -Name $VmName -ResourceGroupName $ResourceGroup
+                $VmSize = $Vm.HardwareProfile.VmSize
+                if ($ChangeSize -eq 'increase') {
+                    $NewVMSize = $ScaleUp[$vmSize]          
+                } 
+                elseIf ($ChangeSize -eq 'decrease') {
+                    $NewVMSize = $ScaleDown[$vmSize]        
+                }
+                else { 
+                    $NewVMSize = $ChangeSize
+                }
+
+                $AvailableVMSizes = (Get-AzVMSize -ResourceGroupName $ResourceGroup -VMName $VmName).Name
+                if ($NewVMSize -in $AvailableVMSizes) {
+                    $Vm.HardwareProfile.VmSize = $NewVMSize
+                    $UpdateResult = Update-AzVM -VM $Vm -ResourceGroupName $ResourceGroup -ErrorAction Stop
+                }
+                else {
+                    Write-Output "Size: $($NewVMSize) not in available sizes, not able to change size."
+                }
+            }
+
+            #This function gets the average CPU load for a VM over the past 12 minutes by querying log analytics
+            function Get-CpuPercentage {
+                param 
+                (
+                    [parameter(Mandatory)]
+                    [string]$VmName
+                )
+
+                $QueryCPU = "Perf
+                | where Computer contains '$($VmName)' and TimeGenerated > ago(12m)
+                | where (CounterName == '% Processor Time') and InstanceName == '_Total'
+                | where ObjectName == 'Processor' 
+                | summarize CPU = percentile(CounterValue, 95) by bin(TimeGenerated, 1m), Computer, CounterName 
+                | sort by TimeGenerated desc"
+                $ResultsCPU = Invoke-AzOperationalInsightsQuery -Workspace $Workspace -Query $QueryCPU 
+                $CPUArray = @($ResultsCPU.Results.CPU)
+                return $CPUAverage = ($CPUArray | Measure-Object -Average).Average 
+            }
+
+            ########################################### SCRIPT LOGIC ########################################### 
+            $VMGroup = $Using:VMGroup
+            $VMGroupsIgnore = Get-AutomationVariable -Name "VMGroupsIgnore"
+
+            if($VMGroup -like "*Group1*") { 
+                #We scale one VM Group to F8s_v2 at 6 am during the weekdays
+		#We didn't include the code to get the $IsMorning and $IsWeekend variables, but they are Booleans and you would just have to check if it is 6 am and if it is a Saturday or Sunday
+                if ($IsMorning -eq $true -and $IsWeekend -eq $false) {
+                    Beginning-ProductionHoursScaleVMs -VMGroup $VMGroup
+                }
+                else {
+                    DynamicallyScaleVMs -VMGroup $VMGroup
+                }
+            }
+            else {
+                DynamicallyScaleVMs -VMGroup $VMGroup
+            } 
+        } 
+    }  
+}
