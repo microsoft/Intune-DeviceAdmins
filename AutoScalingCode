@@ -1,3 +1,10 @@
+######################################################################
+
+Purpose : This script is to implement basic auto scaling of Virtual Machines within a Microsoft Azure Automation Account Runbook
+Created : 2021/4/21
+Author : Microsoft
+######################################################################
+
 #For this powershell script we had to create a Powershell workflow in order to use the foreach -parallel feature
 workflow Scale-AzureVMs-Workflow
 {
@@ -90,7 +97,7 @@ workflow Scale-AzureVMs-Workflow
                 $AvailableVMSizes = (Get-AzVMSize -ResourceGroupName $ResourceGroup -VMName $VmName).Name
                 if ($NewVMSize -in $AvailableVMSizes) {
                     $Vm.HardwareProfile.VmSize = $NewVMSize
-                    $UpdateResult = Update-AzureRmVM -VM $Vm -ResourceGroupName $ResourceGroup -ErrorAction Stop
+                    $UpdateResult = Update-AzVM -VM $Vm -ResourceGroupName $ResourceGroup -ErrorAction Stop
                 }
                 else {
                     Write-Output "Size: $($NewVMSize) not in available sizes, not able to change size."
@@ -111,7 +118,7 @@ workflow Scale-AzureVMs-Workflow
                 | where ObjectName == 'Processor' 
                 | summarize CPU = percentile(CounterValue, 95) by bin(TimeGenerated, 1m), Computer, CounterName 
                 | sort by TimeGenerated desc"
-                $ResultsCPU = Invoke-AzureRmOperationalInsightsQuery -Workspace $Workspace -Query $QueryCPU 
+                $ResultsCPU = Invoke-AzOperationalInsightsQuery -Workspace $Workspace -Query $QueryCPU 
                 $CPUArray = @($ResultsCPU.Results.CPU)
                 return $CPUAverage = ($CPUArray | Measure-Object -Average).Average 
             }
@@ -122,7 +129,7 @@ workflow Scale-AzureVMs-Workflow
 
             if($VMGroup -like "*Group1*") { 
                 #We scale one VM Group to F8s_v2 at 6 am during the weekdays
-		            #We didn't include the code to get the $IsMorning and $IsWeekend variables, but they are Booleans and you would just have to check if it is 6 am and if it is a Saturday or Sunday
+		#We didn't include the code to get the $IsMorning and $IsWeekend variables, but they are Booleans and you would just have to check if it is 6 am and if it is a Saturday or Sunday
                 if ($IsMorning -eq $true -and $IsWeekend -eq $false) {
                     Beginning-ProductionHoursScaleVMs -VMGroup $VMGroup
                 }
