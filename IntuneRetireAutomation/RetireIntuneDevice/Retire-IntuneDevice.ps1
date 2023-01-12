@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
-    Deregister Autopilot Device
+    Retire Intune Device
 .DESCRIPTION
-    Powershell script used to deregister one device from Intune Autopilot. 
+    Powershell script used to retire one device from Intune. 
     It works by connecting to Azure with your credentials, getting a Graph API token using Client Id,
-    Certificate, and Tenant Name, and deregisters an Intune device from Autopilot using the Graph API.
+    certificate, and Tenant Name, and retires an Intune device using the Graph API.
     Instead of using an Azure AD App and certficate, you can also use an MSI for Graph API permissions.
 .PARAMETER TenantName
     The Tenant Name used to get the Graph API access token
@@ -14,13 +14,13 @@
     The Azure Key Vault name that stores the certificate for Client Id
 .PARAMETER CertificateName
     The name of the certificate in the Azure Key Vault
-.PARAMETER SerialNumber
-    The Serial Number for the Intune device being deregistered from Intune Autopilot
+.PARAMETER IntuneDeviceID
+    The Intune Device Id for the Intune device being retired
 .PARAMETER IdentityClientdll
     Path to the Microsoft.Identity.Client dll
 .NOTES
     Version:        1.0
-    Creation date:  04/25/2022
+    Creation date:  1/9/2023
     Purpose/Change: Open Source example
 #>
 
@@ -43,7 +43,7 @@ function Get-AccessToken
     #Run the Powershell command: Install-Module -Name Microsoft.Identity.Client
     Add-Type -LiteralPath $IdentityClientdll
     [string[]] $Scopes = "$ResourceUri/.default"
-    $TenantName = "" #Enter your tenant name
+    $TenantName = "" #Enter your Tenant Name
     $Authority = "https://login.windows.net/$($TenantName)"
     $ClientApplication  = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($ClientId).WithCertificate($ClientCertificate,$true).WithAuthority($Authority).Build()
     $AquireTokenParameters = $ClientApplication.AcquireTokenForClient($Scopes)
@@ -51,18 +51,18 @@ function Get-AccessToken
     return $TokenResponse.AccessToken
 }
 
-function Delete-Device
+function Retire-Device  
 {
     param
     (
         [Parameter(Mandatory=$true)]
-        $SerialNumber
+        $IntuneDeviceID
     )
     try 
     {
-        Write-Output "------------------- Starting AutoPilot device deletion script -------------------"
+        Write-Output "------------------- Starting Retire Intune Device Script -------------------"
         $ClientId = "" #Enter your Client Id for getting access token
-        #Client Id must have Graph API permission: DeviceManagementServiceConfig.ReadWrite.All
+        #Client Id must have Graph API permission: DeviceManagementManagedDevices.PrivilegedOperations.All
 
         $VaultName = "" #Enter your Key Vault name for getting client certificate
         $CertificateName = "" #Enter your Key Vault certificate name for client certificate
@@ -76,28 +76,27 @@ function Delete-Device
             'Content-Type'  = 'application/json'
             'Authorization' = "Bearer " + $GraphApiToken
         }
-        $EncodedSerialNumber = [uri]::EscapeDataString($SerialNumber)
-        $AutoPilotDeviceUrl = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$EncodedSerialNumber')"
-        Write-Output "Getting Device using URL: $($AutoPilotDeviceUrl)"
-        $APDevice = Invoke-RestMethod -Method Get -Uri $AutoPilotDeviceUrl -Headers $Headers
-        if($APDevice.value.ID)
+        $IntuneDeviceUrl = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/$($IntuneDeviceID)"
+        Write-Output "Getting Device using URL: $($IntuneDeviceUrl)"
+        $IntuneDevice = Invoke-RestMethod -Method Get -Uri $IntuneDeviceUrl -Headers $Headers
+        if($IntuneDevice)
         {
-            $AutoPilotDeviceDeleteUrl = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities/$($APDevice.Value.Id)"
-            Write-Output "Attempting to delete device serial number: $SerialNumber"            
-            Invoke-RestMethod -Method DELETE -Uri $AutoPilotDeviceDeleteUrl -Headers $Headers
-            Write-Output "AutoPilot device deleted with serial number: $SerialNumber"
+            Write-Output "Attempting to retire Intune Device Id: $IntuneDeviceID"          
+            $IntuneRetireUrl = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/$($IntuneDevice.Id)/retire"
+            Invoke-RestMethod -Method POST -Uri $IntuneRetireUrl -Headers $Headers
+            Write-Output "Intune device retired"
         }
         else
         {
-            Write-Output "AutoPilot device with serial number: $SerialNumber not found"
+            Write-Output "Intune Device with device id: $IntuneDeviceID not found"
         }
     }
     catch 
     {
-        Write-Output "Error while deleting device with serial number: $SerialNumber"
+        Write-Output "Error while retiring device with id: $IntuneDeviceID"
         Write-Error $_.Exception.Message
     }
 }
 
-$SerialNumber = "" #Enter your Device Serial Number to delete
-Delete-Device -SerialNumber $SerialNumber #Make sure to run Powershell ISE as Admin before running the script
+$IntuneDeviceID = "" #Enter your Intune Device ID to retire
+Retire-Device -IntuneDeviceID $IntuneDeviceID 
